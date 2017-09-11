@@ -6,7 +6,7 @@ Currently this only includes code for the generation of alignment
 marks, however the intention is to include scripts for additional
 layers.
 
-## Files
+### Files
 ```
 nanowire_chip
 |   README.md
@@ -19,12 +19,12 @@ nanowire_chip
     |   Contains historical generated files
 ```
 
-## Building an alignment layer
+### Building an alignment layer
 To build the alignment layer:
+
 1. Run `nanowire_align.py`. This will generate `rectangle.dxf`.
 2. Open `4inch_layout.ftxt`. Edit the "GenJobdesk" step as appropriate. ID's will not yet be included.
 3. Run `gen_id.py` changing X&Y in the script to the dimensions of the written chip. This generates `ids.txt`.
-4. Copy `4inch_layout.ftxt` to `4inch_Layout_<w>x<h>id.ftxt`, and replace the `TEXT_VALUES` section
+4. Copy `4inch_layout.ftxt` to `4inch_Layout_<w>x<h>id.ftxt`, and replace the `TEXT_VALUES` section  
    of the file with the values generated into `ids.txt`.
 5. Run beamer to generate output CON file. (Note: Will need to get values of dwell time from WECAS)
-
