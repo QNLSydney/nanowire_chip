@@ -28,13 +28,13 @@ cc = [0,0,0]            #centre coordinate for the alignment marker
 width_align_e = 150
 w_e = width_align_e
 print("Elionix Alignment marker length = ",w_e)
-padheight_e= 0.4         #this is as a proportion of the total alignment marker
+padheight_e= 0.45      #this is as a proportion of the total alignment marker
 ph_e = padheight_e*width_align_e
 print("Elionix Pad height =", ph_e)
-padwidth_e = 0.2          #this is as a proportion of the total alignment marker
+padwidth_e = 10.0/150          #this is as a proportion of the total alignment marker
 pw_e = padwidth_e*width_align_e
 print("Elionix Padwidth =" , pw_e)
-tracksize_e = 0.01            #this is as a proportion of the total alignment marker
+tracksize_e = 0.5/150            #this is as a proportion of the total alignment marker
 ts_e = tracksize_e*width_align_e
 print("Elionix Tracksize =", ts_e)
 
