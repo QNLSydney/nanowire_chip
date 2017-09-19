@@ -15,7 +15,7 @@ nanowire_chip
 |   4inch_Layout.ftxt - Base Beamer script to place chip into a wafer layout
 |   4inch_Layout_wxhid.ftxt - Beamer script which includes ID's for a w x h wafer.
 |   gen_id.py - Python script to generate id's, to be copied into 4inch_Layout_wxhid.ftxt files.
-|.  coordinate_transform.py - Takes the coordinates of the nanowire in Photoshop and translates to mask.
+|   coordinate_transform.py - Takes the coordinates of the nanowire in Photoshop and translates to mask.
 +---Generated Write Files
     |   Contains historical generated files
 ```
