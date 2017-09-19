@@ -335,11 +335,11 @@ drawing.add(ref)
 #also maybe I want to output a text file with the original, such that at least all the parameters are saved
 #these coordinates will be with respect to the alignment markers - letting the bottom left corner of the subdie be the (0,0) point
 
-window_length = 5 # height of rectangle which will be opened up over nanowire
+window_length = 10 # height of rectangle which will be opened up over nanowire
 start_window_width = 0.02 # let's start with 20nm
-no_windows = 10
-window_spacing = 0.5 #distance between windows
-window_increment = 0.02
+no_windows = 5
+window_spacing = 2 #distance between windows
+window_increment = 0.04
 
 #length_windows = window_spacing*(no_windows-1)+ # NEED TO FIGURE OUT THE SUM OF A SERIES HERE
 #length_nanowire = math.sqrt((nw_corner_x[0]-nw_corner_x[1])**2+(nw_corner_y[0]-nw_corner_y[1])**2)
@@ -359,10 +359,11 @@ for i in range(no_windows):
 #have use [0] here to place nanowire, hence need to rotate around the 0 coordinate
 #NOTE THAT THIS ONLY WORKS FOR FOUR NANOWIRES - NEED TO MAKE THIS SECTION OF THE CODE MORE GENERIC
 #A BLOCK
-
-
-nw_corner_x = (171.4022618,179.65407053)
-nw_corner_y = (137.03204637,143.03696125)
+#007
+#nw1_coords = [[ 187.11635449  163.98085444]]
+#nw2_coords = [[ 196.82563065  161.41557283]]
+nw_corner_x = (187.11635449,196.82563065)
+nw_corner_y = (163.98085444,161.41557283)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 print('nw rotation = ', nw_rotation)
 etch_block_ref_A = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
@@ -370,8 +371,10 @@ etch_block_ref_A = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+n
 drawing.add(etch_block_ref_A)
 
 #B BLOCK
-nw_corner_x = (170.10922412,171.7819414 )
-nw_corner_y = (218.57130706,227.99860439)
+#nw1_coords = [[ 175.94434957  145.20715828]]
+#nw2_coords = [[ 185.97493572  140.73288768]]
+nw_corner_x = (175.94434957, 185.97493572)
+nw_corner_y = (145.20715828,140.73288768)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 print('nw rotation = ', nw_rotation)
 etch_block_ref_B = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
@@ -379,12 +382,10 @@ etch_block_ref_B = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+n
 drawing.add(etch_block_ref_B)
 
 #C BLOCK
-
-#nw1_coords = [[ 188.78058925  134.81015726]]
-#nw2_coords = [[ 198.21213172  131.85120041]]
-
-nw_corner_x = (171.4022618,179.65407053)
-nw_corner_y = (137.03204637,143.03696125)
+#nw1_coords = [[ 180.79594738  110.64318734]]
+#nw2_coords = [[ 190.51222008  102.2830647 ]]
+nw_corner_x = (180.79594738, 190.73329726)
+nw_corner_y = (110.64318734, 102.2830647)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 print('nw rotation = ', nw_rotation)
 etch_block_ref_C = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
@@ -392,15 +393,15 @@ etch_block_ref_C = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+n
 drawing.add(etch_block_ref_C)
 
 #D BLOCK
-nw_corner_x = (171.4022618,179.65407053)
-nw_corner_y = (137.03204637,143.03696125)
+#nw1_coords = [[ 187.30476579  129.04981035]]
+#nw2_coords = [[ 191.49359269  132.60652563]]
+nw_corner_x = (187.30476579,191.49359269 )
+nw_corner_y = (129.04981035,132.60652563)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 print('nw rotation = ', nw_rotation)
 etch_block_ref_D = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
 drawing.add(etch_block_ref_D)
-
-
 
 
 
