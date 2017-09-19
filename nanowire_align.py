@@ -1,5 +1,6 @@
 import os
 import sys
+import math
 from dxfwrite import DXFEngine as dxf
 
 name="rectangle.dxf"
@@ -56,6 +57,7 @@ print("Vistec Alignment marker length = ",h_v)
 
 am_colour = 1
 grid_colour = 180
+etch_colour = 90
 
 nw_x = 2 #number of nanowires in the x direction
 nw_y = 2 #number of nanowires in the y direction
@@ -80,6 +82,9 @@ drawing.layers.add(dxf.layer(name=layer00, color=grid_colour))
 
 layer0 = 'Alignment_Markers'
 drawing.layers.add(dxf.layer(name=layer0, color=am_colour))
+
+layer1 = 'Etch_Markers'
+drawing.layers.add(dxf.layer(name=layer1, color= etch_colour))
 
 #AM GRID HEIGHT AND WIDTH  - figures out the block width and height
 am_e_gridwidth = no_x_align*w_e +(no_x_align-1)*align_space_e
@@ -322,6 +327,85 @@ arrow.add_vertices((
 orient_block.add(arrow)
 ref = dxf.insert(blockname='orient_block', insert=(-die_width/2 + width_align_e*no_x_align + align_space_e*no_x_align + align_distance, -die_length/2 + align_distance), layer=layer0)
 drawing.add(ref)
+
+
+
+#feed in the coordinates of the corner of the nanowire and make the etch tests
+#need to identify which nanowire it was. 
+#also maybe I want to output a text file with the original, such that at least all the parameters are saved
+#these coordinates will be with respect to the alignment markers - letting the bottom left corner of the subdie be the (0,0) point
+
+window_length = 5 # height of rectangle which will be opened up over nanowire
+start_window_width = 0.02 # let's start with 20nm
+no_windows = 10
+window_spacing = 0.5 #distance between windows
+window_increment = 0.02
+
+#length_windows = window_spacing*(no_windows-1)+ # NEED TO FIGURE OUT THE SUM OF A SERIES HERE
+#length_nanowire = math.sqrt((nw_corner_x[0]-nw_corner_x[1])**2+(nw_corner_y[0]-nw_corner_y[1])**2)
+
+etch_block = dxf.block('etch_block')
+drawing.blocks.add(etch_block)
+
+#this generatest the generic window to go everywhere (window_length/2 is to ensure that the grid is centred on the nanowire, and there is +window spacing at the start)
+current_coordinate = window_spacing
+window_size = start_window_width
+for i in range(no_windows):
+    etch_block.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
+        color = etch_colour, rotation = 0, layer = layer1))
+    current_coordinate += window_size + window_spacing
+    window_size += window_increment
+
+#have use [0] here to place nanowire, hence need to rotate around the 0 coordinate
+#NOTE THAT THIS ONLY WORKS FOR FOUR NANOWIRES - NEED TO MAKE THIS SECTION OF THE CODE MORE GENERIC
+#A BLOCK
+
+
+nw_corner_x = (171.4022618,179.65407053)
+nw_corner_y = (137.03204637,143.03696125)
+nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
+print('nw rotation = ', nw_rotation)
+etch_block_ref_A = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+drawing.add(etch_block_ref_A)
+
+#B BLOCK
+nw_corner_x = (170.10922412,171.7819414 )
+nw_corner_y = (218.57130706,227.99860439)
+nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
+print('nw rotation = ', nw_rotation)
+etch_block_ref_B = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
+    colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+drawing.add(etch_block_ref_B)
+
+#C BLOCK
+
+#nw1_coords = [[ 188.78058925  134.81015726]]
+#nw2_coords = [[ 198.21213172  131.85120041]]
+
+nw_corner_x = (171.4022618,179.65407053)
+nw_corner_y = (137.03204637,143.03696125)
+nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
+print('nw rotation = ', nw_rotation)
+etch_block_ref_C = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+drawing.add(etch_block_ref_C)
+
+#D BLOCK
+nw_corner_x = (171.4022618,179.65407053)
+nw_corner_y = (137.03204637,143.03696125)
+nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
+print('nw rotation = ', nw_rotation)
+etch_block_ref_D = dxf.insert(blockname='etch_block', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
+        colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+drawing.add(etch_block_ref_D)
+
+
+
+
+
+
+
 
 #ASSEMBLE THE DRAWING
 #add the grid lines for the design
