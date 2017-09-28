@@ -78,16 +78,16 @@ orient_base_height = 250
 #THESE ARE THE DETAILS OF THE FINE ALIGNMENT MARKERS
 
 #FROM HERE AND BELOW YOU SHOULD NOT NEED TO EDIT ANY PARAMETERS
-layer00 = 'Gridlines'
+layer00 = 'GRIDLINES'
 drawing.layers.add(dxf.layer(name=layer00, color=grid_colour))
 
-layer0 = 'Alignment_Markers'
+layer0 = 'ALIGNMENT_MARKERS'
 drawing.layers.add(dxf.layer(name=layer0, color=am_colour))
 
-layer1 = 'Etch_Markers'
+layer1 = 'ETCH_MARKERS'
 drawing.layers.add(dxf.layer(name=layer1, color= etch_colour))
 
-layer2 = 'Simple_First_Contacts'
+layer2 = 'SIMPLE_FIRST_CONTACTS'
 drawing.layers.add(dxf.layer(name=layer2, color= contact_colour))
 
 #AM GRID HEIGHT AND WIDTH  - figures out the block width and height
@@ -335,7 +335,7 @@ drawing.add(ref)
 #this is the code which adds the first practice contacts for the nanowire #layer2
 
 taper_point = 2 #the width of the contact at its narrowest point
-taper_length = 20
+taper_length = 40
 taper_width = 5
 taper_before_track = 10 # this is the length of the track which will stick out parallel to the nanowire
 bondpad_height = 25
@@ -371,8 +371,8 @@ spline_points = [(+bondpad_width/2,bondpad_height),
     (+bondpad_width/2-(bondpad_width-taper_width)*0.8/2,bondpad_height*3/2), 
     (+bondpad_width/2-(bondpad_width-taper_width)/2,2*bondpad_height)]
 bondpad_block.add(dxf.spline(spline_points, color=contact_colour, layer = layer2))
-bondpad_block_ref = dxf.insert(blockname='bondpad_block', insert=(taper_length+taper_before_track+2*bondpad_height,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 90)
+bondpad_block_ref = dxf.insert(blockname='bondpad_block', insert=(-taper_length-taper_before_track-2*bondpad_height,0), columns = 1 , rows = 1, 
+        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 270)
 contact_block.add(bondpad_block_ref)
 
 contact_block_ref= dxf.insert(blockname='contact_block', insert=(0,0), columns = 1 , rows = 1, 
@@ -423,12 +423,12 @@ for i in range(no_windows):
         color = etch_colour, rotation = 0, layer = layer1))
     
     if i == 0:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
         etch_block_A.add(contact_block_ref)
 
-    if i == 2:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 1:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
         etch_block_A.add(contact_block_ref)
 
@@ -456,13 +456,13 @@ for i in range(no_windows):
     etch_block_B.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
         color = etch_colour, rotation = 0, layer = layer1))
     
-    if i == 1:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 0:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
         etch_block_B.add(contact_block_ref)
 
-    if i == 3:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 1:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
         etch_block_B.add(contact_block_ref)
 
@@ -489,13 +489,13 @@ for i in range(no_windows):
     etch_block_C.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
         color = etch_colour, rotation = 0, layer = layer1))
     
-    if i == 2:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 0:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate+window_size+0.1,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
         etch_block_C.add(contact_block_ref)
 
-    if i == 4:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 2:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-0.1,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
         etch_block_C.add(contact_block_ref)
 
@@ -524,13 +524,13 @@ for i in range(no_windows):
     etch_block_D.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
         color = etch_colour, rotation = 0, layer = layer1))
     
-    if i == 2:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 0:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate+window_size+0.1,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
         etch_block_D.add(contact_block_ref)
 
-    if i == 4:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate,0), columns = 1 , rows = 1, 
+    if i == 2:
+        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-0.1,0), columns = 1 , rows = 1, 
         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
         etch_block_D.add(contact_block_ref)
 
