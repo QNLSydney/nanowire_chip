@@ -1,0 +1,51 @@
+NW positions NW120926_056
+
+A
+nw1_coords = [[ 178.75926118   36.97741917]]
+nw2_coords = [[ 176.86294581   47.37024027]]
+
+coord_botleft = (326,-962)
+coord_botright = (1255,-935)
+coord_topleft = (298,-33)
+coord_topright = (1227,-5)
+nw_1 = (891,-831)
+nw_2 = (884,-799)
+
+B
+
+nw1_coords = [[ 189.59402801  149.17281755]]
+nw2_coords = [[ 198.08165492  152.47842491]]
+
+coord_botleft = (361,-968)
+coord_botright = (1291,-941)
+coord_topleft = (334,-39)
+coord_topright = (1263,-12)
+nw_1 = (935,-489)
+nw_2 = (961,-478)
+
+
+
+C
+
+nw1_coords = [[ 161.94765653  121.15291822]]
+nw2_coords = [[ 155.31623167  126.50788526]]
+
+coord_botleft = (304,-964)
+coord_botright = (1234,-938)
+coord_topleft = (278,-36)
+coord_topright = (1206,-9)
+nw_1 = (795,-575)
+nw_2 = (774,-559)
+
+
+D
+
+nw1_coords = [[  75.73917036  143.5991572 ]]
+nw2_coords = [[  69.18436034  151.21427983]]
+
+coord_botleft = (342,-965)
+coord_botright = (1270,-939)
+coord_topleft = (314,-38)
+coord_topright = (1243,-9)
+nw_1 = (563,-514)
+nw_2 = (542,-491)
