@@ -15,12 +15,12 @@ die_height = 300
 #this is because photoshop calls the top left corner (0,0) and then decreasing in the y direction actually becomes
 #more positive in photoshop
 
-coord_botleft = (326,-962)
-coord_botright = (1255,-935)
-coord_topleft = (298,-33)
-coord_topright = (1227,-5)
-nw_1 = (891,-831)
-nw_2 = (884,-799)
+coord_botleft = (184,-948)
+coord_botright = (1113,-978)
+coord_topleft = (215,-19)
+coord_topright = (1143,-50)
+nw_1 = (741,-518)
+nw_2 = (742,-487)
 
 #centering on the bottom left corner of the rectangle
 new_botleft = (0,0)

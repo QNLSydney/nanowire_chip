@@ -407,8 +407,8 @@ drawing.blocks.add(tgate_block_A)
 
 
 #A NANOWIRE CODE
-nw_corner_x = (92.56287677,93.45052837)
-nw_corner_y = (193.52483374,202.86573261)
+nw_corner_x = (113.33285466 ,114.26811163)
+nw_corner_y = (128.57065968,139.59346239)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 
 #ETCH BLOCK
@@ -462,8 +462,8 @@ drawing.add(contact_block_ref_A)
 island_1 = 1
 island_2 = 1
 
-nw_corner_x = (112.64274388,121.4685056)
-nw_corner_y = (117.80158788,121.76950615)
+nw_corner_x = (117.05564907,126.33222857)
+nw_corner_y = (97.12801893 ,100.01799799)
 
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 
@@ -525,8 +525,8 @@ drawing.add(contact_block_ref_B)
 island_1 = 2
 island_2 = 2 #adds the double dot etch blocks
 
-nw_corner_x = (210.39227794 ,218.62187771)
-nw_corner_y = (205.97164159,199.62701832)
+nw_corner_x = (125.56501709 ,135.34686632 )
+nw_corner_y = (211.62365309,208.71921636)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 
 #ETCH BLOCK
@@ -591,8 +591,8 @@ drawing.add(contact_block_ref_C)
 island_1 = 3
 island_2 = 3 #adds the double dot etch blocks
 
-nw_corner_x = ( 193.6382245 ,203.3215282)
-nw_corner_y = (87.40188165,86.82848077)
+nw_corner_x = ( 175.12848544  ,175.1396027)
+nw_corner_y = (154.60800714,144.59204289)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
 
 #ETCH BLOCK

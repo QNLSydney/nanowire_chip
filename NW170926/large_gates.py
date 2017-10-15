@@ -10,6 +10,21 @@ def plungers_side(layer, plunger_to_nw, plunger_tip_width, plunger_tip_height, p
 	taper.close(True)
 	block.add(taper)
 	
+	return block  
+
+def tgates_side_mirror(layer, tgate_to_nw, tgate_tip_width, tgate_tip_height, tgate_taper_width,blockname): #plungers on just one side of the nanowire
+	
+	block  = dxf.block(blockname, layer=layer)
+	block.add(dxf.rectangle((-tgate_tip_width/2,-tgate_to_nw-tgate_taper_width), 
+		tgate_tip_width, tgate_taper_width, rotation = 0, layer = layer))
+	block.add(dxf.rectangle((-tgate_taper_width/2, -tgate_to_nw-tgate_taper_width-tgate_tip_height), 
+		tgate_taper_width, tgate_tip_height, rotation = 0, layer = layer))
+
+	# block.add(dxf.rectangle((-tgate_tip_width/2,+tgate_to_nw), 
+	# 	tgate_tip_width, tgate_taper_width, rotation = 0, layer = layer))
+	# block.add(dxf.rectangle((-tgate_taper_width/2, +tgate_to_nw+tgate_taper_width), 
+	# 	tgate_taper_width, tgate_tip_height, rotation = 0, layer = layer))
+	
 	return block                                                             # creating the block
 
 
@@ -73,6 +88,15 @@ def position_parallel_contacts(new_blockname, blockname,layer,color, rotation, *
 		block.add(contact_ref_temp)
 	
 	return block   
+
+def position_tgates(new_blockname, blockname, layer, color, *tgate_coords):
+	block = dxf.block(new_blockname, layer = layer)
+	for tgate in tgate_coords:
+		tgate_ref_temp = dxf.insert(blockname = blockname, insert = (tgate,0), columns = 1, rows = 1, 
+    		colspacing = 0,rowspacing =0, color = color)
+		block.add(tgate_ref_temp)
+
+	return block
 
 
 #def contacts_orthogonal()

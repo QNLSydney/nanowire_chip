@@ -2,7 +2,6 @@ import dxfwrite
 from dxfwrite import DXFEngine as dxf
 
 def double_dot_etch_block(layer, starting_gap, window_length, etch_window_1, island_1, etch_window_2, island_2, etch_window_3, blockname):
-	
 	block  = dxf.block(blockname, layer=layer)                                                                # creating the block
 	x_etch_position = starting_gap
 	block.add(dxf.rectangle((x_etch_position,-window_length/2), etch_window_1, window_length, rotation = 0, layer = layer))
