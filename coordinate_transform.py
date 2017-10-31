@@ -1,23 +1,31 @@
-import dxfwrite
+import matplotlib.pyplot as plt
+import cv2
 import numpy
 import math
-from dxfwrite import DXFEngine as dxf
 
 # Create a rotation array to rotate by the angle theta
 def rot_mat(theta):
     c, s = numpy.cos(theta), numpy.sin(theta)
     return numpy.array(((c, -s), (s, c)))
 
-# The following code assumes that the origin is in the bottom left.
-# In photoshop this will mean entering -y for the coordinates.
-# The first argument is the alignment marker coords (bl, br, tl, tr)
+def showimage(img, name, points=None):
+    plt.imshow(img)
+    if points is not None:
+        print(points[:,0])
+        plt.scatter(points[:,0], points[:,1], s=2, alpha=0.5)
+    plt.title(name)
+    plt.show()
+
+# The following code assumes that the origin is in the !!top left!!.
+# The first argument is the alignment marker coords (tl, tr, bl, br)
 # Following this, pass in the two coordinates of the nanowire.
-def find_nw(marker_coords, nw_coords, die_dims=(300, 300)):
+def find_nw(marker_coords, nw_coords, die_dims=(300, 300), img=None, 
+            transform_offset=0, transform_scale=1):
     # Check that our arrays are numpy arrays
     if not isinstance(marker_coords, numpy.ndarray):
-        marker_coords = numpy.array(marker_coords)
+        marker_coords = numpy.array(marker_coords, dtype=numpy.float32)
     if not isinstance(nw_coords, numpy.ndarray):
-        nw_coords = numpy.array(nw_coords)
+        nw_coords = numpy.array(nw_coords, dtype=numpy.float32)
 
     # Check that we have the right number of coordinates
     if marker_coords.shape != (4,2):
@@ -25,73 +33,64 @@ def find_nw(marker_coords, nw_coords, die_dims=(300, 300)):
     if nw_coords.shape != (2,2):
         raise ValueError("nw_coords should be a set of two (x, y) coordinates")
 
-    # Change the origin to the bottom left marker
-    nw_coords -= marker_coords[0]
-    marker_coords -= marker_coords[0]
+    # Check that we've passed in an image
+    have_image = False
+    if isinstance(img, numpy.ndarray):
+        have_image = True
+    elif img is not None:
+        raise ValueError("img must be an image read in by cv2.imread")
 
-    # Transpose coordinate system for easier multiplication
-    marker_coords = marker_coords.transpose()
-    nw_coords = nw_coords.transpose()
+    # Do an openCV Perspective Transform
+    # Note, desired coordinates are offset in order to show a border
+    desired_coords = numpy.array(((0, 0), (die_dims[0], 0), (0, die_dims[1]), die_dims)) * transform_scale
+    desired_coords += transform_offset
+    desired_coords = numpy.float32(desired_coords)
+    M = cv2.getPerspectiveTransform(marker_coords, desired_coords)
 
-    # Rotate the diagonal
-    theta = math.pi/4 - math.atan2(marker_coords[1,3], marker_coords[0,3])
-    rot_m = rot_mat(theta)
-    marker_coords = rot_m @ marker_coords
-    nw_coords = rot_m @ nw_coords
+    # And transform the raw coordinates
+    marker_coords = cv2.perspectiveTransform(numpy.array([marker_coords]), M)[0]
+    nw_coords = cv2.perspectiveTransform(numpy.array([nw_coords]), M)[0]
 
-    #calculating the x-deskew transform
-    x_skew = marker_coords[0,2]/marker_coords[1,2]
-    x_skew_matrix = numpy.array([[1, -x_skew], [0, 1]])
+    # If we have the image, show it
+    if have_image:
+        size = (numpy.array(die_dims) * transform_scale) + transform_offset
+        size = tuple(size)
+        dst = cv2.warpPerspective(img, M, size)
+        showimage(dst, "result", numpy.concatenate((marker_coords, nw_coords)))
+        cv2.imwrite("res.tif", dst)
 
-    #run the coordinate transform for x first
-    marker_coords = x_skew_matrix @ marker_coords
-    nw_coords = x_skew_matrix @ nw_coords
-
-    # And the y-deskew transform
-    y_skew = marker_coords[1,1]/marker_coords[0,1]
-    y_skew_matrix = numpy.array([[1, 0], [-y_skew, 1]])
-
-    # And run the coordinate transforms
-    marker_coords = y_skew_matrix @ marker_coords
-    nw_coords = y_skew_matrix @ nw_coords
-
-    # Stretch the image such that we match the dimensions of the grid
-    stretch_matrix = numpy.diag(numpy.divide(die_dims, ((marker_coords[0, 1], marker_coords[1, 2]))))
-    marker_coords = stretch_matrix @ marker_coords
-    nw_coords = stretch_matrix @ nw_coords
-
-    # Finally, we correct for the distortion of the top corner to make the image square
-    # As this is not a linear transformation, we cannot simply use matrix operations here.
-    distort_corr = (numpy.divide(marker_coords[:,3], die_dims) - 1)/numpy.multiply.reduce(marker_coords[:,3])
-    distort_corr_mc = numpy.tensordot(distort_corr, numpy.multiply.reduce(marker_coords), axes=0) + 1
-    distort_corr_nw = numpy.tensordot(distort_corr, numpy.multiply.reduce(nw_coords), axes=0) + 1
-    marker_coords = marker_coords / distort_corr_mc
-    nw_coords = nw_coords / distort_corr_nw
-
-    # And transpose back
-    marker_coords = marker_coords.transpose()
-    nw_coords = nw_coords.transpose()
+    # Remove the offset that we've added for visualization purposes
+    marker_coords -= 100
+    nw_coords -= 100
+    # And undo any visualization scaling
+    marker_coords /= 2
+    nw_coords /= 2
 
     return (marker_coords, nw_coords)
 
 if __name__ == "__main__":
-    # The dimensions of the die in microns
+    # Open the raw image (if available)
+    im = cv2.imread("NW170926_05601.tif")
+    print(im.shape)
     die_dims = (300, 300)
 
     #note that you have to make all the y coordinates negative (even though they will not be in photoshop)
     #this is because photoshop calls the top left corner (0,0) and then decreasing in the y direction actually becomes
     #more positive in photoshop
-    coord_botleft = (196,-952)
-    coord_botright = (1124,-974)
-    coord_topleft = (219,-21)
-    coord_topright = (1148,-46)
-    nw_1 = (737,-540)
-    nw_2 = (763,-522)
+    coord_botleft = (500, 1935)
+    coord_botright = (2432, 1956)
+    coord_topleft = (540, 19)
+    coord_topright = (2473, 40)
+    nw_1 = (1677,1647)
+    nw_2 = (1688,1709)
 
-    (marker, nw) = find_nw((coord_botleft, coord_botright, coord_topleft, coord_topright),
-            (nw_1, nw_2), die_dims=die_dims)
+    (marker, nw) = find_nw((coord_topleft, coord_topright, coord_botleft, coord_botright),
+            (nw_1, nw_2), die_dims=die_dims, img=im, transform_scale=5)
+
     print("Marker Coordinates: ")
     print(marker)
     print("NW Coordinates")
     print(nw)
+    print("NW Coordinates, shifted origin")
+    print(numpy.abs(nw - (0, 300)))
 
