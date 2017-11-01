@@ -1,6 +1,9 @@
 import os
 import sys
 import math
+import alignment_marker
+import etch_windows
+import large_gates
 from dxfwrite import DXFEngine as dxf
 
 name="rectangle.dxf"
@@ -87,7 +90,7 @@ drawing.layers.add(dxf.layer(name=layer0, color=am_colour))
 layer1 = 'ETCH_MARKERS'
 drawing.layers.add(dxf.layer(name=layer1, color= etch_colour))
 
-layer2 = 'SIMPLE_FIRST_CONTACTS'
+layer2 = 'CONTACTS'
 drawing.layers.add(dxf.layer(name=layer2, color= contact_colour))
 
 #AM GRID HEIGHT AND WIDTH  - figures out the block width and height
@@ -115,34 +118,17 @@ if die_width < (2*align_distance+(am_e_gridwidth*am_elionix+ am_r_gridwidth*am_r
     print("The die width is not long enough to support the dimensions of your alignment markers")
     quit()
 
-#BLOCK for ELIONIX
-ame  = dxf.block("alignmentmarker_elionix", layer=layer0)                                                                # creating the block
-ame.add(dxf.rectangle((cc[0]-pw_e/2,cc[1]-w_e/2,0),pw_e,ph_e,color = am_colour, rotation = 0, layer = layer0))          #bottom square of alignment marker
-ame.add(dxf.rectangle((cc[0]-w_e/2,cc[1]-pw_e/2,0),ph_e,pw_e,color = am_colour, rotation = 0,layer = layer0))          # left square
-ame.add(dxf.rectangle((cc[0]-pw_e/2,cc[1]+w_e/2-ph_e,0),pw_e,ph_e,color =am_colour, rotation = 0,layer = layer0))     # top square
-ame.add(dxf.rectangle((cc[0]+w_e/2-ph_e,cc[1]-pw_e/2,0),ph_e,pw_e,color =am_colour, rotation = 0,layer = layer0))    # right square
-ame.add(dxf.rectangle((cc[0]-ts_e/2,cc[1]-w_e/2+ph_e,0),ts_e,w_e-2*ph_e,color =am_colour, rotation = 0,layer = layer0))                                # long vertical
-ame.add(dxf.rectangle((cc[0]-ts_e/2-(w_e-2*ph_e-ts_e)/2,cc[1]-ts_e/2,0),(w_e-2*ph_e-ts_e)/2,ts_e,color =am_colour, rotation = 0,layer = layer0))         # short horizonal left
-ame.add(dxf.rectangle((cc[0]+ts_e/2,cc[1]-ts_e/2,0),(w_e-2*ph_e-ts_e)/2,ts_e,color =am_colour, rotation = 0,layer = layer0))                            # short horiztonal right
-# add block-definition to drawing
-drawing.blocks.add(ame)
-
 # create a block-reference
 #let's define the bottom left as the (0,0) point of the drawing, in the middle of the chip such that the alignment markers are symmetric around it
 
-#BLOCK for RAITH
-amr  = dxf.block("alignmentmarker_raith")                                                                                         
-amr.add(dxf.rectangle((cc[0]-pw_r/2,cc[1]-w_r/2,0),pw_r,w_r,color =am_colour, rotation = 0,layer = layer0))                                # long vertical
-amr.add(dxf.rectangle((cc[0]-w_r/2,cc[1]-pw_r/2,0),(w_r-2-pw_r)/2,pw_r,color =am_colour, rotation = 0,layer = layer0))               # short horizonal left
-amr.add(dxf.rectangle((cc[0]+pw_r/2,cc[1]-pw_r/2,0),(w_r-2-pw_r)/2,pw_r,color =am_colour, rotation = 0,layer = layer0))                 # short horiztonal right
-# add block-definition to drawing
+#makes the elionix block
+ame = alignment_marker.elionix_alignment_marker(layer0, w_e, pw_e, ph_e, ts_e, 0, 0)
+drawing.blocks.add(ame)
+#makes the raith block
+amr = alignment_marker.raith_alignment_marker(layer0, w_r, pw_r, 0, 0)
 drawing.blocks.add(amr)
-
-#BLOCK for VISTEC
-# creating the block
-amv  = dxf.block("alignmentmarker_vistec")                                                                                         
-amv.add(dxf.rectangle((cc[0]-w_v/2,cc[1]-h_v/2,0),w_v,h_v,color =am_colour, rotation = 0,layer = layer0))   # long vertical
-# add block-definition to drawing
+#makes the vistec block
+amv = alignment_marker.vistec_alignment_marker(layer0, h_v, w_v, 0, 0)
 drawing.blocks.add(amv)
 
 #ADDING ELIONIX BLOCK
@@ -334,49 +320,52 @@ drawing.add(ref)
 
 #this is the code which adds the first practice contacts for the nanowire #layer2
 
-taper_point = 2 #the width of the contact at its narrowest point
-taper_length = 40
-taper_width = 5
+#CONTACT PARAMETERS
+taper_point = 1 #the width of the contact at its narrowest point
+taper_length = 30
+taper_width = 3
 taper_before_track = 10 # this is the length of the track which will stick out parallel to the nanowire
 bondpad_height = 25
 bondpad_width = 45
 
-contact_block = dxf.block('contact_block')
-drawing.blocks.add(contact_block)
-taper= dxf.polyline(layer = layer2)
-taper.add_vertices([(0,-taper_point/2), (0,taper_point/2), (-taper_length,taper_width/2), (-taper_length,-taper_width/2)])
-taper.close(True)
-#drawing.add(taper)
-contact_block.add(taper)
-contact_block.add(dxf.rectangle((-taper_length-taper_before_track,-taper_width/2), taper_before_track, taper_width, 
-        color = contact_colour, rotation = 0, layer = layer2))
 
-#drawing.add(contact_block_ref)
-#creating the block for the bondpads
-bondpad_block = dxf.block('bondpad_block')
-drawing.blocks.add(bondpad_block)
-bondpad_base= dxf.polyline(layer = layer2)
-bondpad_base.add_vertices([(-bondpad_width/2,bondpad_height),(-bondpad_width/2,0),(+bondpad_width/2,0),(+bondpad_width/2,bondpad_height)])
-bondpad_block.add(bondpad_base)
 
-spline_points = [(-bondpad_width/2,bondpad_height), 
-    (-bondpad_width/2+(bondpad_width-taper_width)/8,bondpad_height*2.2/2), 
-    (-bondpad_width/2+(bondpad_width-taper_width)*0.8/2,bondpad_height*3/2), 
-    (-bondpad_width/2+(bondpad_width-taper_width)/2,2*bondpad_height)]
-bondpad_block.add(dxf.spline(spline_points, color=contact_colour, layer = layer2))
+# contact_block = dxf.block('contact_block')
+# drawing.blocks.add(contact_block)
+# taper= dxf.polyline(layer = layer2)
+# taper.add_vertices([(0,-taper_point/2), (0,taper_point/2), (-taper_length,taper_width/2), (-taper_length,-taper_width/2)])
+# taper.close(True)
+# #drawing.add(taper)
+# contact_block.add(taper)
+# contact_block.add(dxf.rectangle((-taper_length-taper_before_track,-taper_width/2), taper_before_track, taper_width, 
+#         color = contact_colour, rotation = 0, layer = layer2))
 
-#right spline
-spline_points = [(+bondpad_width/2,bondpad_height), 
-    (+bondpad_width/2-(bondpad_width-taper_width)/8,bondpad_height*2.2/2), 
-    (+bondpad_width/2-(bondpad_width-taper_width)*0.8/2,bondpad_height*3/2), 
-    (+bondpad_width/2-(bondpad_width-taper_width)/2,2*bondpad_height)]
-bondpad_block.add(dxf.spline(spline_points, color=contact_colour, layer = layer2))
-bondpad_block_ref = dxf.insert(blockname='bondpad_block', insert=(-taper_length-taper_before_track-2*bondpad_height,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 270)
-contact_block.add(bondpad_block_ref)
+# #drawing.add(contact_block_ref)
+# #creating the block for the bondpads
+# bondpad_block = dxf.block('bondpad_block')
+# drawing.blocks.add(bondpad_block)
+# bondpad_base= dxf.polyline(layer = layer2)
+# bondpad_base.add_vertices([(-bondpad_width/2,bondpad_height),(-bondpad_width/2,0),(+bondpad_width/2,0),(+bondpad_width/2,bondpad_height)])
+# bondpad_block.add(bondpad_base)
 
-contact_block_ref= dxf.insert(blockname='contact_block', insert=(0,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
+# spline_points = [(-bondpad_width/2,bondpad_height), 
+#     (-bondpad_width/2+(bondpad_width-taper_width)/8,bondpad_height*2.2/2), 
+#     (-bondpad_width/2+(bondpad_width-taper_width)*0.8/2,bondpad_height*3/2), 
+#     (-bondpad_width/2+(bondpad_width-taper_width)/2,2*bondpad_height)]
+# bondpad_block.add(dxf.spline(spline_points, color=contact_colour, layer = layer2))
+
+# #right spline
+# spline_points = [(+bondpad_width/2,bondpad_height), 
+#     (+bondpad_width/2-(bondpad_width-taper_width)/8,bondpad_height*2.2/2), 
+#     (+bondpad_width/2-(bondpad_width-taper_width)*0.8/2,bondpad_height*3/2), 
+#     (+bondpad_width/2-(bondpad_width-taper_width)/2,2*bondpad_height)]
+# bondpad_block.add(dxf.spline(spline_points, color=contact_colour, layer = layer2))
+# bondpad_block_ref = dxf.insert(blockname='bondpad_block', insert=(-taper_length-taper_before_track-2*bondpad_height,0), columns = 1 , rows = 1, 
+#         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 270)
+# contact_block.add(bondpad_block_ref)
+
+# contact_block_ref= dxf.insert(blockname='contact_block', insert=(0,0), columns = 1 , rows = 1, 
+#         colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
 
 #drawing.add(bondpad_block_ref)
 
@@ -385,166 +374,276 @@ contact_block_ref= dxf.insert(blockname='contact_block', insert=(0,0), columns =
 #also maybe I want to output a text file with the original, such that at least all the parameters are saved
 #these coordinates will be with respect to the alignment markers - letting the bottom left corner of the subdie be the (0,0) point
 
+
+#etch window parameters
+starting_gap = 1.5 #how many ums into (+ve) or before (-ve) the start of the nanowire you want to start the etch
+etch_window_1 = 0.75# the length of the first etch window
+etch_window_2 = 0.02 # 
+etch_window_3 = 0.75
+island_1 = 0.5
+island_2 = 0.5
 window_length = 10 # height of rectangle which will be opened up over nanowire
-start_window_width = 0.02 # let's start with 20nm
-no_windows = 5
-window_spacing = 2 #distance between windows
-window_increment = 0.04
 
-#length_windows = window_spacing*(no_windows-1)+ # NEED TO FIGURE OUT THE SUM OF A SERIES HERE
-#length_nanowire = math.sqrt((nw_corner_x[0]-nw_corner_x[1])**2+(nw_corner_y[0]-nw_corner_y[1])**2)
+#plunger parameters
+plunger_to_nw = 0.150 #250nm from the nanowire
+plunger_tip_width = 0.06
+plunger_tip_height = 5
+plunger_taper_width = 0.2
 
-etch_block = dxf.block('etch_block')
-drawing.blocks.add(etch_block)
+plunger_x_disp = 0.04 # plunger x displacement from island
+contact_x_disp = 0.150 # contact x displacement from island
 
-#this generatest the generic window to go everywhere (window_length/2 is to ensure that the grid is centred on the nanowire, and there is +window spacing at the start)
-current_coordinate = window_spacing
-window_size = start_window_width
-for i in range(no_windows):
-    etch_block.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
-        color = etch_colour, rotation = 0, layer = layer1))
-    current_coordinate += window_size + window_spacing
-    window_size += window_increment
-#have use [0] here to place nanowire, hence need to rotate around the 0 coordinate
-#NOTE THAT THIS ONLY WORKS FOR FOUR NANOWIRES - NEED TO MAKE THIS SECTION OF THE CODE MORE GENERIC
+#makes the unit plunger block
+plunger_block = large_gates.plungers_side_mirror(layer2, plunger_to_nw,plunger_tip_width,plunger_tip_height,plunger_taper_width,"plunger_block")
+drawing.blocks.add(plunger_block)
 
-#A BLOCK
-#007
-#nw1_coords = [[ 187.11635449  163.98085444]]
-#nw2_coords = [[ 196.82563065  161.41557283]]
-etch_block_A = dxf.block('etch_block_A')
-drawing.blocks.add(etch_block_A)
-#etch_block_A.add(etch_block) #adds the basis of the windows
-#then adds the tapers
-current_coordinate = window_spacing
-window_size = start_window_width
-for i in range(no_windows):
-    etch_block_A.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
-        color = etch_colour, rotation = 0, layer = layer1))
-    
-    if i == 0:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
-        etch_block_A.add(contact_block_ref)
+tgate_to_nw = 0.150
+tgate_tip_height = 7
+tgate_taper_width = 0.100
 
-    if i == 1:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
-        etch_block_A.add(contact_block_ref)
+tgate_tip_width = island_1 - 0.175
+tgate_block_A = large_gates.tgates_side_mirror(layer2, tgate_to_nw, tgate_tip_width, tgate_tip_height, tgate_taper_width,"tgate_block_A")
+drawing.blocks.add(tgate_block_A)
 
-    current_coordinate += window_size + window_spacing
-    window_size += window_increment
 
-nw_corner_x = (171.4022618,179.65407053)
-nw_corner_y = (137.03204637,143.03696125)
+#A NANOWIRE CODE
+nw_corner_x = (92.56287677,93.45052837)
+nw_corner_y = (193.52483374,202.86573261)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
-print('nw rotation = ', nw_rotation)
-etch_block_ref_A = dxf.insert(blockname='etch_block_A', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+
+#ETCH BLOCK
+dd_etch_block_A = etch_windows.double_dot_etch_block(layer1, starting_gap, window_length, 
+    etch_window_1, island_1, etch_window_2, island_2, etch_window_3, "dd_etch_block_A")
+drawing.blocks.add(dd_etch_block_A) #adds the double dot etch blocks
+
+etch_block_ref_A = dxf.insert(blockname='dd_etch_block_A', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
     columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
 drawing.add(etch_block_ref_A)
 
+#PLUNGERS
+#these are where you want to position plungers relative to the first coordinate of the nanowire
+plunger_coords_A = [starting_gap+etch_window_1-plunger_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2/2,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+plunger_x_disp]
+#these are where you want the contacts
+contact_coords_A = [starting_gap+etch_window_1-contact_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+contact_x_disp]
+#these are where you want the T gates
+tgate_coords_A = [starting_gap+etch_window_1+0.5*island_1,
+    starting_gap+etch_window_1+island_1+etch_window_2+0.5*island_2]
 
 
-#B BLOCK
-etch_block_B = dxf.block('etch_block_B')
-drawing.blocks.add(etch_block_B)
-#etch_block_A.add(etch_block) #adds the basis of the windows
-#then adds the tapers
-current_coordinate = window_spacing
-window_size = start_window_width
-for i in range(no_windows):
-    etch_block_B.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
-        color = etch_colour, rotation = 0, layer = layer1))
-    
-    if i == 0:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
-        etch_block_B.add(contact_block_ref)
+#positions the unit plunger block
+plunger_block_A = large_gates.position_plunger("plunger_block_A", "plunger_block", layer2, contact_colour, *plunger_coords_A)
+drawing.blocks.add(plunger_block_A)
+plunger_block_A_ref = dxf.insert(blockname='plunger_block_A', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(plunger_block_A_ref)
 
-    if i == 1:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-window_spacing/2,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
-        etch_block_B.add(contact_block_ref)
+tgate_block_A1 = large_gates.position_tgates("tgate_block_A1", "tgate_block_A", layer2, contact_colour, *tgate_coords_A)
+drawing.blocks.add(tgate_block_A1)
+tgate_block_A_ref = dxf.insert(blockname='tgate_block_A1', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(tgate_block_A_ref)
 
-    current_coordinate += window_size + window_spacing
-    window_size += window_increment
-#nw1_coords = [[ 175.94434957  145.20715828]]
-#nw2_coords = [[ 185.97493572  140.73288768]]
-nw_corner_x = (170.10922412,171.7819414 )
-nw_corner_y = (218.57130706,227.99860439)
+#CONTACTS
+#makes the unit and then repeats the contact
+contact_block_A = large_gates.contacts_parallel(drawing, "contact_block_A", layer2, contact_colour, taper_point, taper_length, taper_width, taper_before_track,*contact_coords_A)
+drawing.blocks.add(contact_block_A)
+
+contact_block_ref_A = dxf.insert(blockname='contact_block_A', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(contact_block_ref_A)
+
+
+
+
+#B NANOWIRE CODE
+island_1 = 1
+island_2 = 1
+
+nw_corner_x = (112.64274388,121.4685056)
+nw_corner_y = (117.80158788,121.76950615)
+
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
-print('nw rotation = ', nw_rotation)
-etch_block_ref_B = dxf.insert(blockname='etch_block_B', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
+
+#ETCH BLOCK
+dd_etch_block_B = etch_windows.double_dot_etch_block(layer1, starting_gap, window_length, 
+    etch_window_1, island_1, etch_window_2, island_2, etch_window_3, "dd_etch_block_B")
+drawing.blocks.add(dd_etch_block_B) #adds the double dot etch blocks
+
+etch_block_ref_B = dxf.insert(blockname='dd_etch_block_B', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
     colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
 drawing.add(etch_block_ref_B)
 
-#C BLOCK
-etch_block_C= dxf.block('etch_block_C')
-drawing.blocks.add(etch_block_C)
-#etch_block_A.add(etch_block) #adds the basis of the windows
-#then adds the tapers
-current_coordinate = window_spacing
-window_size = start_window_width
-for i in range(no_windows):
-    etch_block_C.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
-        color = etch_colour, rotation = 0, layer = layer1))
-    
-    if i == 0:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate+window_size+0.1,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
-        etch_block_C.add(contact_block_ref)
+#PLUNGERS
+#these are where you want to position plungers relative to the first coordinate of the nanowire
+plunger_coords_B = [starting_gap+etch_window_1-plunger_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2/2,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+plunger_x_disp]
 
-    if i == 2:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-0.1,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
-        etch_block_C.add(contact_block_ref)
+#these are where you want the contacts
+contact_coords_B = [starting_gap+etch_window_1-contact_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+contact_x_disp]
 
-    current_coordinate += window_size + window_spacing
-    window_size += window_increment
+#these are where you want the T gates
+tgate_coords_B = [starting_gap+etch_window_1+0.5*island_1,
+    starting_gap+etch_window_1+island_1+etch_window_2+0.5*island_2]
 
-#nw1_coords = [[ 180.79594738  110.64318734]]
-#nw2_coords = [[ 190.51222008  102.2830647 ]]
-nw_corner_x = (188.78058925,198.21213172)
-nw_corner_y = (134.81015726,131.85120041)
+#positions the unit plunger block
+plunger_block_B = large_gates.position_plunger("plunger_block_B", "plunger_block", layer2, contact_colour, *plunger_coords_B)
+drawing.blocks.add(plunger_block_B)
+plunger_block_B_ref= dxf.insert(blockname='plunger_block_B', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
+    colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+drawing.add(plunger_block_B_ref)
+
+#positions the tgates
+tgate_tip_width = island_1 - 0.175
+tgate_block_B = large_gates.tgates_side_mirror(layer2, tgate_to_nw, tgate_tip_width, tgate_tip_height, tgate_taper_width,"tgate_block_B")
+drawing.blocks.add(tgate_block_B)
+
+tgate_block_B1 = large_gates.position_tgates("tgate_block_B1", "tgate_block_B", layer2, contact_colour, *tgate_coords_B)
+drawing.blocks.add(tgate_block_B1)
+tgate_block_B_ref = dxf.insert(blockname='tgate_block_B1', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(tgate_block_B_ref)
+
+#CONTACTS
+#makes the unit and then repeats the contact
+contact_block_B = large_gates.contacts_parallel(drawing, "contact_block_B", layer2, contact_colour, taper_point, taper_length, taper_width, taper_before_track,*contact_coords_B)
+drawing.blocks.add(contact_block_B)
+
+contact_block_ref_B = dxf.insert(blockname='contact_block_B', insert=(-nw_grid_width/2+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(contact_block_ref_B)
+
+
+
+
+
+#C NANOWIRE CODE
+island_1 = 2
+island_2 = 2 #adds the double dot etch blocks
+
+nw_corner_x = (210.39227794 ,218.62187771)
+nw_corner_y = (205.97164159,199.62701832)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
-print('nw rotation = ', nw_rotation)
-etch_block_ref_C = dxf.insert(blockname='etch_block_C', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
-    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+
+#ETCH BLOCK
+dd_etch_block_C = etch_windows.double_dot_etch_block(layer1, starting_gap, window_length, 
+    etch_window_1, island_1, etch_window_2, island_2, etch_window_3, "dd_etch_block_C")
+drawing.blocks.add(dd_etch_block_C) #adds the double dot etch blocks
+
+etch_block_ref_C = dxf.insert(blockname='dd_etch_block_C', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
 drawing.add(etch_block_ref_C)
+
+#PLUNGERS
+#these are where you want to position plungers relative to the first coordinate of the nanowire
+plunger_coords_C = [starting_gap+etch_window_1-plunger_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2/2,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+plunger_x_disp]
+print(plunger_coords_C)
+#these are where you want the contacts
+contact_coords_C = [starting_gap+etch_window_1-contact_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+contact_x_disp]
+print(contact_coords_C)
+
+#these are where you want the T gates
+tgate_coords_C = [starting_gap+etch_window_1+0.5*island_1,
+    starting_gap+etch_window_1+island_1+etch_window_2+0.5*island_2]
+
+#positions the unit plunger block
+plunger_block_C = large_gates.position_plunger("plunger_block_C", "plunger_block", layer2, contact_colour, *plunger_coords_C)
+drawing.blocks.add(plunger_block_C)
+plunger_block_C_ref = dxf.insert(blockname='plunger_block_C', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(plunger_block_C_ref)
+
+#positions the tgates
+tgate_tip_width = island_1 - 0.175
+tgate_block_C = large_gates.tgates_side_mirror(layer2, tgate_to_nw, tgate_tip_width, tgate_tip_height, tgate_taper_width,"tgate_block_C")
+drawing.blocks.add(tgate_block_C)
+
+tgate_block_C1 = large_gates.position_tgates("tgate_block_C1", "tgate_block_C", layer2, contact_colour, *tgate_coords_C)
+drawing.blocks.add(tgate_block_C1)
+tgate_block_C_ref = dxf.insert(blockname='tgate_block_C1', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(tgate_block_C_ref)
+
+
+#CONTACTS
+#makes the unit and then repeats the contact
+contact_block_C = large_gates.contacts_parallel(drawing, "contact_block_C", layer2, contact_colour, taper_point, taper_length, taper_width, taper_before_track,*contact_coords_C)
+drawing.blocks.add(contact_block_C)
+
+contact_block_ref_C = dxf.insert(blockname='contact_block_C', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+ nw_corner_x[0],-nw_grid_height/2+nw_die_height+nw_grid_spacing+nw_corner_y[0]), 
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(contact_block_ref_C)
+
+
+
+
 
 
 #D BLOCK
-etch_block_D= dxf.block('etch_block_D')
-drawing.blocks.add(etch_block_D)
-#etch_block_A.add(etch_block) #adds the basis of the windows
-#then adds the tapers
-current_coordinate = window_spacing
-window_size = start_window_width
-for i in range(no_windows):
-    etch_block_D.add(dxf.rectangle((current_coordinate,-window_length/2), window_size, window_length, 
-        color = etch_colour, rotation = 0, layer = layer1))
-    
-    if i == 0:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate+window_size+0.1,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 0) 
-        etch_block_D.add(contact_block_ref)
 
-    if i == 2:
-        contact_block_ref= dxf.insert(blockname='contact_block', insert=(current_coordinate-0.1,0), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer2, color =contact_colour, rotation = 180) 
-        etch_block_D.add(contact_block_ref)
+island_1 = 3
+island_2 = 3 #adds the double dot etch blocks
 
-    current_coordinate += window_size + window_spacing
-    window_size += window_increment
-#nw1_coords = [[ 187.30476579  129.04981035]]
-#nw2_coords = [[ 191.49359269  132.60652563]]
-nw_corner_x = (205.40905705,219.51795076)
-nw_corner_y = (162.45429611,166.66380715)
+nw_corner_x = ( 193.6382245 ,203.3215282)
+nw_corner_y = (87.40188165,86.82848077)
 nw_rotation = math.atan((nw_corner_y[1]-nw_corner_y[0])/(nw_corner_x[1]-nw_corner_x[0]))*180/math.pi #needs to be in degrees for dxfengine
-print('nw rotation = ', nw_rotation)
-etch_block_ref_D = dxf.insert(blockname='etch_block_D', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]), columns = 1 , rows = 1, 
-        colspacing = 0, rowspacing = 0, layer = layer1, color =am_colour, rotation = nw_rotation) 
+
+#ETCH BLOCK
+dd_etch_block_D = etch_windows.double_dot_etch_block(layer1, starting_gap, window_length, 
+    etch_window_1, island_1, etch_window_2, island_2, etch_window_3, "dd_etch_block_D")
+drawing.blocks.add(dd_etch_block_D) #adds the double dot etch blocks
+
+etch_block_ref_D = dxf.insert(blockname='dd_etch_block_D', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]),
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
 drawing.add(etch_block_ref_D)
+
+#PLUNGERS
+#these are where you want to position plungers relative to the first coordinate of the nanowire
+plunger_coords_D = [starting_gap+etch_window_1-plunger_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2/2,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+plunger_x_disp]
+print(plunger_coords_D)
+#these are where you want the contacts
+contact_coords_D = [starting_gap+etch_window_1-contact_x_disp,
+    starting_gap+etch_window_1+island_1+etch_window_2+island_2+contact_x_disp]
+print(contact_coords_D)
+#these are where you want the T gates
+tgate_coords_D = [starting_gap+etch_window_1+0.5*island_1,
+    starting_gap+etch_window_1+island_1+etch_window_2+0.5*island_2]
+
+#positions the unit plunger block
+plunger_block_D = large_gates.position_plunger("plunger_block_D", "plunger_block", layer2, contact_colour, *plunger_coords_D)
+drawing.blocks.add(plunger_block_D)
+plunger_block_D_ref = dxf.insert(blockname='plunger_block_D', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]),
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(plunger_block_D_ref)
+
+#positions the tgates
+tgate_tip_width = island_1 - 0.175
+tgate_block_D = large_gates.tgates_side_mirror(layer2, tgate_to_nw, tgate_tip_width, tgate_tip_height, tgate_taper_width,"tgate_block_D")
+drawing.blocks.add(tgate_block_D)
+
+tgate_block_D1 = large_gates.position_tgates("tgate_block_D1", "tgate_block_D", layer2, contact_colour, *tgate_coords_D)
+drawing.blocks.add(tgate_block_D1)
+tgate_block_D_ref = dxf.insert(blockname='tgate_block_D1', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]),
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(tgate_block_D_ref)
+
+#CONTACTS
+#makes the unit and then repeats the contact
+contact_block_D = large_gates.contacts_parallel(drawing, "contact_block_D", layer2, contact_colour, taper_point, taper_length, taper_width, taper_before_track,*contact_coords_D)
+drawing.blocks.add(contact_block_D)
+
+contact_block_ref_D = dxf.insert(blockname='contact_block_D', insert=(-nw_grid_width/2+nw_die_width+nw_grid_spacing+nw_corner_x[0],-nw_grid_height/2+nw_corner_y[0]),
+    columns = 1 , rows = 1, colspacing = 0, rowspacing = 0, color =am_colour, rotation = nw_rotation) 
+drawing.add(contact_block_ref_D)
 
 
 #ASSEMBLE THE DRAWING

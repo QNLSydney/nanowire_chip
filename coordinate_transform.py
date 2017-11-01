@@ -1,89 +1,97 @@
 import dxfwrite
-import os
-import sys
 import numpy
-import random
 import math
-#import elionix_alignment as eal
 from dxfwrite import DXFEngine as dxf
 
+# Create a rotation array to rotate by the angle theta
+def rot_mat(theta):
+    c, s = numpy.cos(theta), numpy.sin(theta)
+    return numpy.array(((c, -s), (s, c)))
 
-die_width = 300
-die_height = 300
+# The following code assumes that the origin is in the bottom left.
+# In photoshop this will mean entering -y for the coordinates.
+# The first argument is the alignment marker coords (bl, br, tl, tr)
+# Following this, pass in the two coordinates of the nanowire.
+def find_nw(marker_coords, nw_coords, die_dims=(300, 300)):
+    # Check that our arrays are numpy arrays
+    if not isinstance(marker_coords, numpy.ndarray):
+        marker_coords = numpy.array(marker_coords)
+    if not isinstance(nw_coords, numpy.ndarray):
+        nw_coords = numpy.array(nw_coords)
 
-#note that you have to make all the y coordinates negative (even though they will not be in photoshop)
-#this is because photoshop calls the top left corner (0,0) and then decreasing in the y direction actually becomes
-#more positive in photoshop
-coord_botleft = (196,-952)
-coord_botright = (1124,-974)
-coord_topleft = (219,-21)
-coord_topright = (1148,-46)
-nw_1 = (737,-540)
-nw_2 = (763,-522)
+    # Check that we have the right number of coordinates
+    if marker_coords.shape != (4,2):
+        raise ValueError("marker_coords should be a set of four (x, y) coordinates")
+    if nw_coords.shape != (2,2):
+        raise ValueError("nw_coords should be a set of two (x, y) coordinates")
 
-#centering on the bottom left corner of the rectangle
-new_botleft = (0,0)
-new_botright = tuple(numpy.subtract(coord_botright, coord_botleft))
-new_topright = tuple(numpy.subtract(coord_topright, coord_botleft))
-new_topleft = tuple(numpy.subtract(coord_topleft, coord_botleft))
-#transforming the nanowire coordinates as well
-new_nw1 = tuple(numpy.subtract(nw_1, coord_botleft))
-new_nw2 = tuple(numpy.subtract(nw_2, coord_botleft))
+    # Change the origin to the bottom left marker
+    nw_coords -= marker_coords[0]
+    marker_coords -= marker_coords[0]
 
-#calculating the x transform
-theta_x = math.atan(new_topleft[0]/(new_topleft[1]))
-x_skew_matrix = numpy.matrix([[1, -1*math.tan(theta_x)], [0, 1]])
+    # Transpose coordinate system for easier multiplication
+    marker_coords = marker_coords.transpose()
+    nw_coords = nw_coords.transpose()
 
-#run the coordinate transform for x first
-new_botright = numpy.matmul(x_skew_matrix, [new_botright[0],new_botright[1]])
-new_topright = numpy.matmul(x_skew_matrix, [new_topright[0],new_topright[1]])
-new_topleft = numpy.matmul(x_skew_matrix, [new_topleft[0],new_topleft[1]])
-#nanowire
-new_nw1 = numpy.matmul(x_skew_matrix, [new_nw1[0],new_nw1[1]])
-new_nw2= numpy.matmul(x_skew_matrix, [new_nw2[0],new_nw2[1]])
+    # Rotate the diagonal
+    theta = math.pi/4 - math.atan2(marker_coords[1,3], marker_coords[0,3])
+    rot_m = rot_mat(theta)
+    marker_coords = rot_m @ marker_coords
+    nw_coords = rot_m @ nw_coords
 
-#print(new_botright.item(1))
-theta_y = math.atan(new_botright.item(1)/(new_botright.item(0)))
-y_skew_matrix = numpy.matrix([[1, 0], [-math.tan(theta_y), 1]])
-#run the coordinate transform for y skew
-new_botleft = numpy.matrix([0,0])
-new_botright = numpy.matmul(y_skew_matrix, [new_botright.item(0),new_botright.item(1)])
-print("nbr =", new_botright)
-new_topright = numpy.matmul(y_skew_matrix, [new_topright.item(0),new_topright.item(1)])
-print("ntr =", new_topright)
-new_topleft = numpy.matmul(y_skew_matrix, [new_topleft.item(0),new_topleft.item(1)])
-print("ntl =", new_topleft)
+    #calculating the x-deskew transform
+    x_skew = marker_coords[0,2]/marker_coords[1,2]
+    x_skew_matrix = numpy.array([[1, -x_skew], [0, 1]])
 
-#nanowire coordinate tranform for y skew
-new_nw1 = numpy.matmul(y_skew_matrix, [new_nw1.item(0),new_nw1.item(1)])
-print("nw1 =", new_nw1)
-new_nw2= numpy.matmul(y_skew_matrix, [new_nw2.item(0),new_nw2.item(1)])
-print("nw2 =", new_nw2)
+    #run the coordinate transform for x first
+    marker_coords = x_skew_matrix @ marker_coords
+    nw_coords = x_skew_matrix @ nw_coords
 
+    # And the y-deskew transform
+    y_skew = marker_coords[1,1]/marker_coords[0,1]
+    y_skew_matrix = numpy.array([[1, 0], [-y_skew, 1]])
 
-#now that everything is aligned, find the average height and width
-equiv_width = (abs(new_botright.item(0)-new_botleft.item(0))+abs(new_topright.item(0)-new_topleft.item(0)))/2
-equiv_height = (abs(new_topright.item(1)-new_botright.item(1))+abs(new_topleft.item(1)-new_botleft.item(1)))/2
-#print("equiv_width =", equiv_width)
-#print("equiv_height =", equiv_height)
+    # And run the coordinate transforms
+    marker_coords = y_skew_matrix @ marker_coords
+    nw_coords = y_skew_matrix @ nw_coords
 
-#x coordinate of the nanowire
-new_nw1[0,0] = (die_width/equiv_width)*new_nw1.item(0)
-new_nw1[0,1] = (die_height/equiv_height)*new_nw1.item(1)
-print("nw1_coords =", new_nw1)
+    # Stretch the image such that we match the dimensions of the grid
+    stretch_matrix = numpy.diag(numpy.divide(die_dims, ((marker_coords[0, 1], marker_coords[1, 2]))))
+    marker_coords = stretch_matrix @ marker_coords
+    nw_coords = stretch_matrix @ nw_coords
 
-new_nw2[0,0] = (die_width/equiv_width)*new_nw2.item(0)
-new_nw2[0,1] = (die_height/equiv_height)*new_nw2.item(1)
-print("nw2_coords =", new_nw2)
-#THESE ARE THE COORDINATES WITH RESPECT TO THE BOTTOM LEFT HAND CORNER OF THE DIE
+    # Finally, we correct for the distortion of the top corner to make the image square
+    # As this is not a linear transformation, we cannot simply use matrix operations here.
+    distort_corr = (numpy.divide(marker_coords[:,3], die_dims) - 1)/numpy.multiply.reduce(marker_coords[:,3])
+    distort_corr_mc = numpy.tensordot(distort_corr, numpy.multiply.reduce(marker_coords), axes=0) + 1
+    distort_corr_nw = numpy.tensordot(distort_corr, numpy.multiply.reduce(nw_coords), axes=0) + 1
+    marker_coords = marker_coords / distort_corr_mc
+    nw_coords = nw_coords / distort_corr_nw
 
+    # And transpose back
+    marker_coords = marker_coords.transpose()
+    nw_coords = nw_coords.transpose()
 
-#can sanity check by calculating the length of the nanowire
+    return (marker_coords, nw_coords)
 
-#new_topleft = 
-#new_topright = 
-#the aim of this code is to extract the coordinates of the nanowire
-#y_scale_1 = (abs(coord_topleft[1]- coord_botleft[1])+ abs(coord_topright[1]- coord_botright[1]))/2
-#print(y_scale_1)
-#x_scale_1 = (abs(coord_botright[0]- coord_botleft[0])+ abs(coord_topright[0]- coord_topleft[0]))/2
-#print(x_scale_1)
+if __name__ == "__main__":
+    # The dimensions of the die in microns
+    die_dims = (300, 300)
+
+    #note that you have to make all the y coordinates negative (even though they will not be in photoshop)
+    #this is because photoshop calls the top left corner (0,0) and then decreasing in the y direction actually becomes
+    #more positive in photoshop
+    coord_botleft = (196,-952)
+    coord_botright = (1124,-974)
+    coord_topleft = (219,-21)
+    coord_topright = (1148,-46)
+    nw_1 = (737,-540)
+    nw_2 = (763,-522)
+
+    (marker, nw) = find_nw((coord_botleft, coord_botright, coord_topleft, coord_topright),
+            (nw_1, nw_2), die_dims=die_dims)
+    print("Marker Coordinates: ")
+    print(marker)
+    print("NW Coordinates")
+    print(nw)
+
