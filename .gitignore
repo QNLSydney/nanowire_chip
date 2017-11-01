@@ -97,6 +97,9 @@ $RECYCLE.BIN/
 # Windows shortcuts
 *.lnk
 
+# OSX Crap
+*.DS_Store
+
 # Swap
 [._]*.s[a-v][a-z]
 [._]*.sw[a-p]
