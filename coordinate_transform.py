@@ -2,6 +2,7 @@ import matplotlib.pyplot as plt
 import cv2
 import numpy
 import math
+import os.path
 
 # Create a rotation array to rotate by the angle theta
 def rot_mat(theta):
@@ -11,7 +12,6 @@ def rot_mat(theta):
 def showimage(img, name, points=None):
     plt.imshow(img)
     if points is not None:
-        print(points[:,0])
         plt.scatter(points[:,0], points[:,1], s=2, alpha=0.5)
     plt.title(name)
     plt.show()
@@ -60,29 +60,33 @@ def find_nw(marker_coords, nw_coords, die_dims=(300, 300), img=None,
         cv2.imwrite("res.tif", dst)
 
     # Remove the offset that we've added for visualization purposes
-    marker_coords -= 100
-    nw_coords -= 100
+    marker_coords -= transform_offset
+    nw_coords -= transform_offset
     # And undo any visualization scaling
-    marker_coords /= 2
-    nw_coords /= 2
+    marker_coords /= transform_scale
+    nw_coords /= transform_scale
 
     return (marker_coords, nw_coords)
 
 if __name__ == "__main__":
+    impath = "/Users/spauka/Dropbox/DotPics/Nanowire_Fab/NW170926/NW_Alignment/56/SEM_Alignment"
+
     # Open the raw image (if available)
-    im = cv2.imread("NW170926_05601.tif")
+    imfpath = os.path.join(impath, "NW170926_56_03.tif")
+    print(imfpath)
+    im = cv2.imread(imfpath)
     print(im.shape)
     die_dims = (300, 300)
 
     #note that you have to make all the y coordinates negative (even though they will not be in photoshop)
     #this is because photoshop calls the top left corner (0,0) and then decreasing in the y direction actually becomes
     #more positive in photoshop
-    coord_botleft = (500, 1935)
-    coord_botright = (2432, 1956)
-    coord_topleft = (540, 19)
-    coord_topright = (2473, 40)
-    nw_1 = (1677,1647)
-    nw_2 = (1688,1709)
+    coord_botleft = (271, 1908)
+    coord_botright = (2119, 1902)
+    coord_topleft = (288, 70)
+    coord_topright = (2136, 65)
+    nw_1 = (748, 1025)
+    nw_2 = (708, 980)
 
     (marker, nw) = find_nw((coord_topleft, coord_topright, coord_botleft, coord_botright),
             (nw_1, nw_2), die_dims=die_dims, img=im, transform_scale=5)
