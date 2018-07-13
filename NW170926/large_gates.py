@@ -87,7 +87,7 @@ def position_parallel_contacts(new_blockname, blockname,layer,color, rotation, *
             colspacing = 0,rowspacing =0, color = color, rotation = rotation)
         block.add(contact_ref_temp)
 
-    return block   
+    return block
 
 def position_tgates(new_blockname, blockname, layer, color, *tgate_coords):
     block = dxf.block(new_blockname, layer = layer)
@@ -98,5 +98,7 @@ def position_tgates(new_blockname, blockname, layer, color, *tgate_coords):
 
     return block
 
-
-#def contacts_orthogonal()
+# Create a new bondpad block
+# Bondpad will be square with a given side width, with a teardrop of length width (if enabled).
+def bondpad(blockname, size, teardrop=True, trace_width=10, teardrop_length=50):
+    pass
