@@ -1,12 +1,20 @@
+"""
+Draw common elements for a nanowire design
+"""
 import math
 
 import ezdxf
 from ezdxf.math import Vector, Matrix44, ConstructionBox
 
+import render_text
+
 def round_vect(vector, precision=3):
+    """
+    Round a vector to the specified precision.
+    """
     return Vector(*(round(x, precision) for x in vector))
 
-def elionix_mark(doc, name="AM_elionix",
+def elionix_mark(dxf_doc, name="AM_elionix",
                  cross_dim=150, center_dim=15,
                  arm_width=10, center_arm_width=1,
                  orientation_square_dim=1.5):
@@ -23,7 +31,7 @@ def elionix_mark(doc, name="AM_elionix",
         center_arm_width: The width of the center arm segments.
         orientation_square_dim: The dimensions (square) of the little alignment squares.
     """
-    elionix_block = doc.blocks.new(name=name)
+    elionix_block = dxf_doc.blocks.new(name=name)
 
     # Define a rotation around the center
     center = Vector((cross_dim/2, cross_dim/2, 0))
@@ -62,7 +70,7 @@ def elionix_mark(doc, name="AM_elionix",
 
     return elionix_block
 
-def elionix_4block(doc, em_mark, name="AM_elionix_4", block_size=400):
+def elionix_4block(dxf_doc, em_mark, name="AM_elionix_4", block_size=400):
     """
     Create a set of 4 elionix marks, rotated around the center.
 
@@ -71,7 +79,7 @@ def elionix_4block(doc, em_mark, name="AM_elionix_4", block_size=400):
         elionix_mark: The block reference of a single marker.
         block_size: The total (square) size of the alignment block.
     """
-    elionix_block = doc.blocks.new(name=name)
+    elionix_block = dxf_doc.blocks.new(name=name)
 
     # Calculate relevant coordinates
     center = Vector(block_size/2, block_size/2, 0)
@@ -90,7 +98,8 @@ def elionix_4block(doc, em_mark, name="AM_elionix_4", block_size=400):
         em_mark_size = bbox.extmax - bbox.extmin
         em_mark_center = bbox.extmin + em_mark_size/2
     else:
-        raise TypeError("em_mark must be a dxf Block, or the name of a Block defined in the document.")
+        raise TypeError("em_mark must be a dxf Block, or the name of a Block "
+                        "defined in the document.")
 
     # Place markers
     mark_pos = center_br - em_mark_center
@@ -102,7 +111,8 @@ def elionix_4block(doc, em_mark, name="AM_elionix_4", block_size=400):
 
 if __name__ == "__main__":
     doc = ezdxf.new()
-    em_mark = elionix_mark(doc)
-    elionix_4block(doc, em_mark)
+    mark = elionix_mark(doc)
+    elionix_4block(doc, mark)
+    render_text.render_to_block(doc, "The quick brown fox jumps over the lazy dog. 1234567890")
     with open("test.dxf", "w") as f:
         doc.write(f)
