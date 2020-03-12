@@ -14,6 +14,52 @@ def round_vect(vector, precision=3):
     """
     return Vector(*(round(x, precision) for x in vector))
 
+def arrow(dxf_doc, name="arrow", height=150,
+          arm_width=30, head_width=100, head_height=60):
+    """
+    Create an arrow with the name given. The total height of the arrow is
+    given by height, and the size of the head is given by head_height. The length
+    of just the arm is therefore height-head_height.
+    The width of the arm and the bottom of the head are given by arm_width and head_width
+    respectively.
+    """
+    arrow_block = dxf_doc.blocks.new(name)
+
+    # Check the geometry is sensible
+    if head_width < arm_width:
+        raise ValueError(f"Head ({head_width}) must be wider than the "
+                         f"arm ({arm_width}).")
+    if head_height > height:
+        raise ValueError(f"Head height ({head_height}) must be less than the "
+                         f"total height ({height}).")
+
+    # We define the origin of the arrow at the bottom left, as is the case for
+    # the elionix mark. The center bottom is here for convenience.
+    center_bot = Vector(head_width/2, 0, 0)
+
+    # Start defining the polyline
+    cpos = center_bot
+    pline = arrow_block.add_polyline2d([cpos])
+    cpos = cpos + Vector(arm_width/2, 0, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector(0, height-head_height, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector((head_width-arm_width)/2, 0, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector(-head_width/2, head_height, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector(-head_width/2, -head_height, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector((head_width-arm_width)/2, 0, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector(0, -height+head_height, 0)
+    pline.append_vertex(cpos)
+    pline.m_close()
+
+    # Return the completed arrow
+    return arrow_block
+
+
 def elionix_mark(dxf_doc, name="AM_elionix",
                  cross_dim=150, center_dim=15,
                  arm_width=10, center_arm_width=1,
@@ -109,10 +155,41 @@ def elionix_4block(dxf_doc, em_mark, name="AM_elionix_4", block_size=400):
         })
         mark_pos = round_vect(center_rot.transform(mark_pos))
 
+def die_marker(dxf_doc, name="die_marker", arm_thickness=30, arm_length=200):
+    """
+    Draw a marker for the corner of a die.
+    """
+    die_block = dxf_doc.blocks.new(name)
+
+    if arm_thickness > arm_length:
+        raise ValueError(f"Arm thickness is greater than arm length "
+                         f"({arm_thickness} > {arm_length}).")
+
+    # Draw the marker
+    cpos = Vector(0, 0, 0)
+    pline = die_block.add_polyline2d([cpos])
+    cpos = cpos + Vector(arm_length, 0, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector(0, arm_thickness, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos - Vector(arm_length - arm_thickness, 0, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos + Vector(0, arm_length - arm_thickness, 0)
+    pline.append_vertex(cpos)
+    cpos = cpos - Vector(arm_thickness, 0, 0)
+    pline.append_vertex(cpos)
+    pline.m_close()
+
+    # Return the completed marker
+    return die_block
+
+
 if __name__ == "__main__":
     doc = ezdxf.new()
     mark = elionix_mark(doc)
     elionix_4block(doc, mark)
-    render_text.render_to_block(doc, "The quick brown fox jumps over the lazy dog. 1234567890")
+    render_text.render_to_block(doc, "NW200311_0001")
+    arrow(doc, name="orientation_arrow")
+    die_marker(doc, name="die_marker")
     with open("test.dxf", "w") as f:
         doc.write(f)
