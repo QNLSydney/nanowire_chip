@@ -163,8 +163,8 @@ def get_glyph(doc, letter):
                     cpoint += 1
                 else:
                     raise ValueError("Sequential control points not valid for cubic splines.")
-        # Finished generating the spline points. Next,
-        # Generate a knots that groups points into sequences of cubic splines.
+        # Finished generating the spline points. Next,generate a sequence of knots
+        # that groups points into sequences of cubic splines.
         knots = [0.0]
         knots.extend(repeat_n(range((len(spline_points)+3)//3), 3))
         knots.append(knots[-1])
