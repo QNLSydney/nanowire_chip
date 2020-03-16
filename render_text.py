@@ -126,6 +126,14 @@ def get_glyph(doc, letter):
                 # We are looking at a control point
                 if not tags[cpoint] & 2:
                     # We are at a quadratic sequential control point.
+                    # Check if we're at the end of the segment
+                    if cpoint == end:
+                        cpoint_1 = start
+                        end_tag = tags[start]
+                    else:
+                        cpoint_1 = cpoint + 1
+                        end_tag = tags[cpoint_1]
+
                     # If we are at the beginning, this is a special case,
                     # we need to reset the starting position
                     if cpoint == start:
@@ -145,14 +153,6 @@ def get_glyph(doc, letter):
                         p1 = Vector(*points[cpoint])
                         p2 = Vector(*points[cpoint_1])
                         p0 = (p0 + p1)/2
-
-                    # Check if we're at the end of the segment
-                    if cpoint == end:
-                        cpoint_1 = start
-                        end_tag = tags[start]
-                    else:
-                        cpoint_1 = cpoint + 1
-                        end_tag = tags[cpoint_1]
 
                     # Check if we are at a sequential control point again
                     if end_tag & 1 == 0:
@@ -192,5 +192,10 @@ def render_to_block(doc, text="", name=None, height=10):
     cpos = Vector(0, 0)
     for letter in text:
         letter_block, advance_x = get_glyph(doc, letter)
-        block.add_blockref(letter_block.name, cpos)
-        cpos = cpos + Vector(advance_x, 0)
+        block.add_blockref(letter_block.name, cpos, dxfattribs={
+            'xscale': height,
+            'yscale': height
+        })
+        cpos = cpos + Vector(advance_x*height, 0)
+
+    return block, cpos
