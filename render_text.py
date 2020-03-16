@@ -7,11 +7,15 @@ import functools
 import numpy as np
 from freetype import Face, FT_LOAD_FLAGS
 
-from ezdxf.math import Vector
+import gdspy
+from mathutils import Vector
 
-def repeat_n(iterable, n):
+def repeat_n(iterable, n_iter):
+    """
+    Repeat each element of the iterable n times.
+    """
     for i in iterable:
-        for _ in range(n):
+        for _ in range(n_iter):
             yield i
 
 def _quadratic_to_qubic(p0, p1, p2):
@@ -37,22 +41,22 @@ def get_font(font="SourceCodePro-Bold.otf"):
     font_renderer.set_char_size(32*64) # 32pt size
     return font_renderer
 
-def get_glyph(doc, letter):
+def get_glyph(lib, letter, layer=0):
     """
     Get a block reference to the given letter
     """
     if not isinstance(letter, str) and len(letter) == 1:
         raise TypeError(f"Letter must be a string of length 1. Got: ({letter}).")
 
-    if getattr(get_glyph, "cache", None) is None or get_glyph.doc is not doc:
+    if getattr(get_glyph, "cache", None) is None or get_glyph.doc is not lib:
         get_glyph.cache = {}
-        get_glyph.doc = doc
+        get_glyph.doc = lib
 
-    if letter in get_glyph.cache:
-        return get_glyph.cache[letter]
+    if (letter, layer) in get_glyph.cache:
+        return get_glyph.cache[(letter, layer)]
 
-    name = f"*char_0x{ord(letter):02x}"
-    block = doc.blocks.new(name)
+    name = f"char_{layer}_0x{ord(letter):02x}"
+    block = lib.new_cell(name)
 
     # Load control points from font file
     font = get_font()
@@ -62,15 +66,16 @@ def get_glyph(doc, letter):
     points = np.array(outline.points, dtype=float)/font.height
     tags = outline.tags
 
-    # Add splines
+    # Add polylines
     start, end = 0, -1
+    polylines = []
     for contour in outline.contours:
         start = end + 1
         end = contour
 
-        # Define the font in terms of a cubic spline
+        # Build up the letter as a curve
         cpoint = start
-        spline_points = [Vector(*points[cpoint])]
+        curve = gdspy.Curve(*points[cpoint], tolerance=0.001)
         while cpoint <= end:
             # Figure out what sort of point we are looking at
             if tags[cpoint] & 1:
@@ -87,32 +92,26 @@ def get_glyph(doc, letter):
 
                 # Then add the control points
                 if ntag & 1:
-                    # Straight segment
-                    for i in range(1, 4):
-                        line_point = ((3-i)*points[cpoint] + (i)*npoint)/3
-                        spline_points.append(Vector(*line_point))
+                    curve.L(*npoint)
                     cpoint += 1
                 elif ntag & 2:
                     # We are at a cubic bezier curve point
                     if cpoint+3 <= end:
-                        spline_points.extend(Vector(*p) for p in points[cpoint+1:cpoint+4])
+                        curve.C(*points[cpoint+1:cpoint+4].flatten())
                     elif cpoint+2 <= end:
-                        spline_points.extend(Vector(*p) for p in points[cpoint+1:cpoint+3])
-                        spline_points.append(Vector(*points[start]))
+                        curve.C(*points[cpoint+1:cpoint+3].flatten(), *points[start])
                     else:
                         raise ValueError("Missing bezier control points. We require at least"
                                          " two control points to get a cubic curve.")
                     cpoint += 3
                 else:
                     # Otherwise we're at a quadratic bezier curve point
-                    # Convert the point to a cubic curve point
                     if cpoint + 2 > end:
                         cpoint_2 = start
                         end_tag = tags[start]
                     else:
                         cpoint_2 = cpoint + 2
                         end_tag = tags[cpoint_2]
-                    p0 = Vector(*points[cpoint])
                     p1 = Vector(*points[cpoint+1])
                     p2 = Vector(*points[cpoint_2])
 
@@ -120,7 +119,9 @@ def get_glyph(doc, letter):
                     # p2 is actually the midpoint of p1 and p2.
                     if end_tag & 1 == 0:
                         p2 = (p1 + p2)/2
-                    spline_points.extend(_quadratic_to_qubic(p0, p1, p2))
+
+                    # Add the curve
+                    curve.Q(*p1, *p2)
                     cpoint += 2
             else:
                 # We are looking at a control point
@@ -145,7 +146,7 @@ def get_glyph(doc, letter):
                             # halfway between here and the last point
                             p0 = (p0 + p1)/2
                         # And reset the starting position of the spline
-                        spline_points = [p0]
+                        curve = gdspy.Curve(*p0, tolerance=0.001)
                     else:
                         # The first control point is at the midpoint of this control point and the
                         # previous control point
@@ -159,24 +160,23 @@ def get_glyph(doc, letter):
                         p2 = (p1 + p2)/2
 
                     # And add the segment
-                    spline_points.extend(_quadratic_to_qubic(p0, p1, p2))
+                    curve.Q(*p1, *p2)
                     cpoint += 1
                 else:
                     raise ValueError("Sequential control points not valid for cubic splines.")
-        # Finished generating the spline points. Next,generate a sequence of knots
-        # that groups points into sequences of cubic splines.
-        knots = [0.0]
-        knots.extend(repeat_n(range((len(spline_points)+3)//3), 3))
-        knots.append(knots[-1])
-        knots = [k/knots[-1] for k in knots]
+        polylines.append(gdspy.Polygon(curve.get_points(), layer=layer))
 
-        block.add_open_spline(spline_points, knots=knots, degree=3)
+    # Construct the letter
+    letter_polyline = polylines[0]
+    for polyline in polylines[1:]:
+        letter_polyline = gdspy.boolean(letter_polyline, polyline, "xor", layer=layer)
+    block.add(letter_polyline)
 
     # Cache the return value and return it
-    get_glyph.cache[letter] = (block, glyph.advance.x/font.height)
-    return get_glyph.cache[letter]
+    get_glyph.cache[(letter, layer)] = (block, glyph.advance.x/font.height)
+    return get_glyph.cache[(letter, layer)]
 
-def render_to_block(doc, text="", name=None, height=10):
+def render_to_block(lib, text="", name=None, height=10, layer=0):
     """
     Render some text to a block.
     """
@@ -184,18 +184,14 @@ def render_to_block(doc, text="", name=None, height=10):
         raise TypeError("Text must be a string.")
 
     if name is None:
-        block = doc.blocks.new("text_block")
-        name = block.name
+        block = lib.new_cell("text_block")
     else:
-        block = doc.blocks.new(name)
+        block = lib.new_cell(name)
 
-    cpos = Vector(0, 0)
+    cpos = Vector((0, 0, 0))
     for letter in text:
-        letter_block, advance_x = get_glyph(doc, letter)
-        block.add_blockref(letter_block.name, cpos, dxfattribs={
-            'xscale': height,
-            'yscale': height
-        })
-        cpos = cpos + Vector(advance_x*height, 0)
+        letter_block, advance_x = get_glyph(lib, letter, layer=layer)
+        block.add(gdspy.CellReference(letter_block, cpos.xy, magnification=height))
+        cpos = cpos + Vector((advance_x*height, 0, 0))
 
     return block, cpos
