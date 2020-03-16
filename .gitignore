@@ -114,3 +114,13 @@ Session.vim
 *~
 # Auto-generated tag files
 tags
+
+# Ignore fonts
+*.ttf
+*.otf
+
+# Ignore generated outputs
+*.gds
+*.dwl
+*.dxf
+%.dwg
